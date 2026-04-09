@@ -1,0 +1,1176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>🐱 NEKO CTRL // Cat LED Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;900&family=Fredoka+One&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --bg:#1a0a2e;
+  --bg2:#231040;
+  --bg3:#2d1855;
+  --pink:#ff6eb4;
+  --pink-dim:#8b2d5a;
+  --pink-glow:rgba(255,110,180,0.25);
+  --purple:#c084fc;
+  --purple-dim:#6b21a8;
+  --mint:#67e8f9;
+  --mint-dim:#0e7490;
+  --yellow:#fde047;
+  --yellow-dim:#a16207;
+  --peach:#fdba74;
+  --red:#f87171;
+  --red-dim:#7f1d1d;
+  --green:#86efac;
+  --green-dim:#166534;
+  --text:#f0d6ff;
+  --text-dim:#7c5a9e;
+  --border:rgba(192,132,252,0.18);
+  --border-hot:rgba(255,110,180,0.6);
+  --card:rgba(35,16,64,0.9);
+}
+
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;overflow-x:hidden;cursor:default}
+
+#bgCanvas{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:0.7}
+
+body::after{content:'';position:fixed;inset:0;z-index:1;pointer-events:none;
+  background:radial-gradient(ellipse at 30% 20%,rgba(192,132,252,0.08) 0%,transparent 60%),
+             radial-gradient(ellipse at 70% 80%,rgba(255,110,180,0.06) 0%,transparent 60%)}
+
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@keyframes floatSlow{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+@keyframes purr{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
+@keyframes tailWag{0%,100%{transform:rotate(-15deg)}50%{transform:rotate(15deg)}}
+@keyframes earWiggle{0%,100%{transform:rotate(0deg)}50%{transform:rotate(-8deg)}}
+@keyframes pawPat{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-6px) rotate(-10deg)}}
+@keyframes pinkPulse{0%,100%{box-shadow:0 0 8px var(--pink),0 0 20px var(--pink-glow)}50%{box-shadow:0 0 20px var(--pink),0 0 50px rgba(255,110,180,.45)}}
+@keyframes purplePulse{0%,100%{box-shadow:0 0 8px var(--purple)}50%{box-shadow:0 0 24px var(--purple),0 0 50px rgba(192,132,252,.4)}}
+@keyframes mintPulse{0%,100%{box-shadow:0 0 6px var(--mint)}50%{box-shadow:0 0 18px var(--mint)}}
+@keyframes rainbowShift{0%{filter:hue-rotate(0deg)}100%{filter:hue-rotate(360deg)}}
+@keyframes sparkle{0%,100%{opacity:0;transform:scale(0)}50%{opacity:1;transform:scale(1)}}
+@keyframes slideDown{from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:none}}
+@keyframes popIn{0%{transform:scale(.4);opacity:0}70%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}
+@keyframes heartBeat{0%,100%{transform:scale(1)}14%{transform:scale(1.3)}28%{transform:scale(1)}42%{transform:scale(1.2)}70%{transform:scale(1)}}
+@keyframes bootLoad{from{width:0}to{width:100%}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+@keyframes tickerScroll{from{transform:translateX(100%)}to{transform:translateX(-200%)}}
+@keyframes rippleOut{0%{transform:scale(.3);opacity:1}100%{transform:scale(3);opacity:0}}
+@keyframes wobble{0%,100%{transform:rotate(0)}25%{transform:rotate(-5deg)}75%{transform:rotate(5deg)}}
+@keyframes countWarn{0%,100%{color:var(--red);text-shadow:0 0 16px var(--red)}50%{color:#fca5a5;text-shadow:none}}
+@keyframes yayGlow{0%,100%{color:var(--mint);text-shadow:0 0 20px var(--mint)}50%{color:#a5f3fc;text-shadow:0 0 8px var(--mint)}}
+@keyframes pawBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+
+#boot{position:fixed;inset:0;z-index:999;background:#0d0618;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
+  transition:opacity .8s ease}
+#boot.gone{opacity:0;pointer-events:none}
+.boot-cat{font-size:64px;animation:float 1.5s ease-in-out infinite}
+.boot-title{font-family:'Fredoka One',sans-serif;font-size:clamp(24px,5vw,48px);
+  color:var(--pink);text-shadow:0 0 30px var(--pink);letter-spacing:4px}
+.boot-title span{color:var(--mint)}
+.boot-sub{font-size:11px;letter-spacing:4px;color:var(--text-dim);font-family:'Space Mono',monospace}
+.boot-bar-wrap{width:280px;height:6px;background:#1a0a2e;border:1px solid rgba(192,132,252,.3);border-radius:10px;overflow:hidden}
+.boot-bar-fill{height:100%;width:0;background:linear-gradient(90deg,var(--pink),var(--purple),var(--mint));
+  border-radius:10px;animation:bootLoad 2.4s cubic-bezier(.4,0,.2,1) forwards;box-shadow:0 0 12px var(--pink)}
+.boot-log{font-size:10px;letter-spacing:2px;color:var(--text-dim);font-family:'Space Mono',monospace}
+.boot-warn{font-size:10px;letter-spacing:3px;color:var(--yellow);animation:blink .8s step-end infinite}
+
+/* MODALS */
+.modal-bg{position:fixed;inset:0;z-index:800;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(10,4,26,.85);backdrop-filter:blur(8px);
+  opacity:0;pointer-events:none;transition:opacity .3s}
+.modal-bg.show{opacity:1;pointer-events:all}
+.mbox{padding:36px 44px;text-align:center;max-width:480px;width:90%;
+  position:relative;overflow:hidden;border:2px solid;border-radius:20px;animation:popIn .4s ease both}
+.mbox::before{content:'';position:absolute;top:0;left:0;right:0;height:5px;border-radius:20px 20px 0 0}
+
+/* FISHING START MODAL (LED ON) */
+#mExpl .mbox{border-color:var(--mint);background:rgba(4,18,28,.97);
+  box-shadow:0 0 60px rgba(103,232,249,.35)}
+#mExpl .mbox::before{background:linear-gradient(90deg,var(--mint),var(--purple))}
+.m-icon-on{font-size:72px;line-height:1;margin-bottom:12px;animation:float 1.5s ease-in-out infinite}
+.m-title-on{font-family:'Fredoka One',sans-serif;font-size:clamp(20px,4vw,32px);
+  color:var(--mint);letter-spacing:3px;margin-bottom:8px;
+  text-shadow:0 0 20px var(--mint)}
+.m-sub-on{font-size:11px;letter-spacing:2px;color:#a5f3fc;margin-bottom:24px;line-height:1.9;font-family:'Space Mono',monospace}
+
+/* SUCCESS MODAL (LED OFF before timer) */
+#mDef .mbox{border-color:var(--yellow);background:rgba(20,16,4,.97);
+  box-shadow:0 0 60px rgba(253,224,71,.25)}
+#mDef .mbox::before{background:linear-gradient(90deg,var(--yellow),var(--mint))}
+.m-icon-off{font-size:70px;line-height:1;margin-bottom:12px;animation:float 1.5s ease-in-out infinite}
+.m-title-off{font-family:'Fredoka One',sans-serif;font-size:clamp(18px,3.5vw,28px);
+  color:var(--yellow);margin-bottom:8px;letter-spacing:2px;text-shadow:0 0 20px var(--yellow)}
+.m-sub-off{font-size:11px;letter-spacing:2px;color:#fef9c3;margin-bottom:24px;line-height:1.9;font-family:'Space Mono',monospace}
+
+/* FAIL MODAL (timer ran out) */
+#mFail .mbox{border-color:var(--red);background:rgba(20,4,4,.97);
+  box-shadow:0 0 60px rgba(248,113,113,.25)}
+#mFail .mbox::before{background:linear-gradient(90deg,var(--red),var(--purple))}
+.m-icon-fail{font-size:70px;line-height:1;margin-bottom:12px;animation:float 2s ease-in-out infinite}
+.m-title-fail{font-family:'Fredoka One',sans-serif;font-size:clamp(18px,3.5vw,28px);
+  color:var(--red);margin-bottom:8px;letter-spacing:2px;text-shadow:0 0 20px var(--red)}
+.m-sub-fail{font-size:11px;letter-spacing:2px;color:#fca5a5;margin-bottom:24px;line-height:1.9;font-family:'Space Mono',monospace}
+
+.mbtn{font-family:'Fredoka One',sans-serif;font-size:13px;letter-spacing:2px;padding:12px 32px;
+  border:2px solid;cursor:pointer;background:transparent;border-radius:30px;transition:all .2s}
+.mbtn.teal{color:var(--mint);border-color:var(--mint)}
+.mbtn.teal:hover{background:rgba(103,232,249,.12);box-shadow:0 0 20px rgba(103,232,249,.35);transform:scale(1.05)}
+.mbtn.yellow{color:var(--yellow);border-color:var(--yellow)}
+.mbtn.yellow:hover{background:rgba(253,224,71,.1);box-shadow:0 0 20px rgba(253,224,71,.3);transform:scale(1.05)}
+.mbtn.red{color:var(--red);border-color:var(--red)}
+.mbtn.red:hover{background:rgba(248,113,113,.1);box-shadow:0 0 20px rgba(248,113,113,.3);transform:scale(1.05)}
+
+.ripple-ring{position:absolute;border-radius:50%;border:2px solid;
+  width:80px;height:80px;top:50%;left:50%;margin:-40px 0 0 -40px;
+  pointer-events:none;animation:rippleOut 1.6s ease-out infinite}
+.ripple-ring:nth-child(2){animation-delay:.5s}
+.ripple-ring:nth-child(3){animation-delay:1s}
+.ripple-ring.tl{border-color:var(--mint);opacity:.4}
+
+.topbar{width:100%;background:rgba(29,14,52,.95);border-bottom:2px solid rgba(192,132,252,.2);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 20px;height:56px;position:relative;z-index:10;
+  box-shadow:0 2px 20px rgba(192,132,252,.1)}
+.topbar-l{display:flex;align-items:center;gap:12px;z-index:1}
+.badge{font-family:'Fredoka One',sans-serif;font-size:13px;letter-spacing:3px;
+  color:var(--pink);border:2px solid var(--pink);padding:4px 14px;border-radius:20px;
+  box-shadow:0 0 14px rgba(255,110,180,.3)}
+.brand{font-family:'Nunito',sans-serif;font-size:12px;letter-spacing:2px;
+  color:var(--text-dim);font-weight:600}
+.topbar-r{display:flex;align-items:center;gap:14px;z-index:1}
+.t-dot{width:10px;height:10px;border-radius:50%;background:var(--mint);animation:mintPulse 1.5s ease-in-out infinite}
+.t-dot.on{background:var(--pink);animation:pinkPulse .8s ease-in-out infinite}
+.clk{font-family:'Space Mono',monospace;font-size:12px;letter-spacing:2px;color:var(--yellow)}
+.paw-strip{display:flex;gap:3px;align-items:center}
+.paw{font-size:14px;opacity:.3;transition:all .4s}
+.paw.lit{opacity:1;animation:pawBounce .6s ease-in-out infinite}
+.paw:nth-child(2).lit{animation-delay:.1s}
+.paw:nth-child(3).lit{animation-delay:.2s}
+.paw:nth-child(4).lit{animation-delay:.3s}
+
+.alert-ticker{width:100%;background:rgba(255,110,180,.04);
+  border-bottom:1px solid rgba(192,132,252,.15);
+  padding:6px 20px;display:flex;align-items:center;gap:10px;overflow:hidden;z-index:10;position:relative;
+  transition:all .4s}
+.alert-ticker.on{background:rgba(255,110,180,.12);border-bottom-color:rgba(255,110,180,.5);animation:purr .8s step-end infinite}
+.ticker-dot{width:7px;height:7px;border-radius:50%;background:var(--text-dim);flex-shrink:0;animation:blink 1.2s step-end infinite}
+.ticker-dot.active{background:var(--pink);box-shadow:0 0 8px var(--pink)}
+.ticker-text{font-size:10px;letter-spacing:2px;color:var(--text-dim);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:color .4s;font-family:'Space Mono',monospace}
+.ticker-text.active{color:#f9a8d4}
+.ticker-lvl{font-size:10px;letter-spacing:2px;color:var(--text-dim);transition:color .4s;font-family:'Space Mono',monospace}
+.ticker-lvl.active{color:var(--pink)}
+
+header{width:100%;padding:20px 22px 14px;border-bottom:1px solid var(--border);
+  animation:slideDown .5s ease .3s both;position:relative;z-index:10}
+.cmd-line{font-size:10px;letter-spacing:2px;color:var(--text-dim);margin-bottom:6px;font-family:'Space Mono',monospace}
+h1{font-family:'Fredoka One',sans-serif;font-size:clamp(18px,4vw,32px);
+  letter-spacing:4px;color:var(--pink);text-shadow:0 0 20px rgba(255,110,180,.4)}
+h1 span{color:var(--purple)}
+h1 em{font-style:normal;font-size:.45em;color:var(--text-dim);display:block;letter-spacing:3px;margin-top:4px;font-family:'Space Mono',monospace;font-weight:400}
+
+.main{width:100%;max-width:960px;margin:0 auto;padding:16px 16px 60px;
+  display:flex;flex-direction:column;gap:14px;position:relative;z-index:10}
+.row{display:flex;gap:14px;flex-wrap:wrap}
+.col{flex:1;min-width:220px;display:flex;flex-direction:column;gap:14px}
+
+.panel{background:var(--card);border:1px solid var(--border);
+  padding:18px 20px 16px;position:relative;overflow:hidden;
+  transition:border-color .3s,box-shadow .3s;border-radius:16px;backdrop-filter:blur(8px)}
+.panel:hover{border-color:var(--border-hot);box-shadow:0 0 24px rgba(255,110,180,.06)}
+.panel::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,transparent,rgba(192,132,252,.5),transparent);border-radius:16px 16px 0 0}
+.panel.ppink::before{background:linear-gradient(90deg,transparent,var(--pink),transparent)}
+.panel.pmint::before{background:linear-gradient(90deg,transparent,var(--mint),transparent)}
+.panel.pyellow::before{background:linear-gradient(90deg,transparent,var(--yellow),transparent)}
+
+.ptag{font-size:9px;letter-spacing:3px;color:var(--text-dim);text-transform:uppercase;
+  margin-bottom:14px;margin-top:2px;display:flex;align-items:center;gap:8px;font-family:'Space Mono',monospace}
+.ptag::before{content:'🐾';font-size:10px}
+.ptag::after{content:'';flex:1;height:1px;background:var(--border)}
+
+.status-wrap{display:flex;align-items:center;gap:20px}
+.cat-face-wrap{flex-shrink:0;width:110px;height:110px;
+  display:flex;align-items:center;justify-content:center;position:relative}
+.cat-face{font-size:64px;line-height:1;transition:all .4s;animation:floatSlow 3s ease-in-out infinite}
+.cat-face.on{filter:drop-shadow(0 0 12px var(--pink));animation:purr 1s ease-in-out infinite}
+.cat-face.off{filter:drop-shadow(0 0 8px var(--mint))}
+.cat-sparkle{position:absolute;font-size:14px;animation:sparkle 1.5s ease-in-out infinite;pointer-events:none}
+.cat-sparkle:nth-child(2){top:5px;left:10px;animation-delay:.5s}
+.cat-sparkle:nth-child(3){top:10px;right:8px;animation-delay:1s}
+.cat-sparkle:nth-child(4){bottom:8px;left:15px;animation-delay:.3s}
+
+.s-text{flex:1}
+.s-label{font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:6px;font-family:'Space Mono',monospace}
+.s-code{font-family:'Fredoka One',sans-serif;font-size:28px;
+  color:var(--text-dim);transition:color .4s}
+.s-code.on{color:var(--pink);text-shadow:0 0 18px var(--pink);animation:pinkPulse .9s ease-in-out infinite}
+.s-code.off{color:var(--mint);text-shadow:0 0 14px var(--mint)}
+.s-detail{font-size:10px;color:var(--text-dim);margin-top:6px;line-height:1.8;font-family:'Space Mono',monospace}
+
+.s-badge{display:inline-flex;align-items:center;gap:7px;padding:5px 12px;
+  border:1px solid var(--border);background:rgba(192,132,252,.08);border-radius:20px;
+  font-size:9px;letter-spacing:2px;margin-top:8px;font-family:'Space Mono',monospace}
+.sb-dot{width:7px;height:7px;border-radius:50%;background:var(--text-dim);transition:all .3s}
+.sb-dot.live{background:var(--mint);animation:mintPulse 1.5s ease-in-out infinite}
+.sb-dot.on{background:var(--pink);animation:pinkPulse .8s ease-in-out infinite}
+
+.paw-leds{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.paw-led-item{display:flex;align-items:center;gap:5px;font-size:9px;letter-spacing:2px;color:var(--text-dim);font-family:'Space Mono',monospace}
+.paw-led{font-size:12px;opacity:.25;transition:all .3s}
+.paw-led.lit{opacity:1;filter:drop-shadow(0 0 4px currentColor)}
+.paw-led.pk{color:var(--pink)}
+.paw-led.tl{color:var(--mint)}
+.paw-led.yw{color:var(--yellow)}
+.paw-led.gr{color:var(--green)}
+
+.cd-wrap{display:flex;flex-direction:column;align-items:center;padding:12px 0 6px;gap:6px}
+.cd-tag{font-size:9px;letter-spacing:4px;color:var(--text-dim);font-family:'Space Mono',monospace}
+.cd-val{font-family:'Fredoka One',sans-serif;font-size:clamp(36px,6vw,54px);
+  letter-spacing:4px;color:var(--text-dim);transition:color .4s}
+.cd-val.on{animation:countWarn .75s ease-in-out infinite}
+.cd-val.safe{color:var(--mint);text-shadow:0 0 20px var(--mint);animation:yayGlow 2s ease-in-out infinite}
+.cd-sub{font-size:9px;letter-spacing:2px;color:var(--text-dim);font-family:'Space Mono',monospace}
+
+#catCanvas{width:100%;height:130px;display:block;border-radius:8px}
+
+.mood-bars{display:flex;flex-direction:column;gap:10px}
+.mrow{display:flex;align-items:center;gap:10px}
+.mlabel{font-size:9px;letter-spacing:2px;color:var(--text-dim);width:58px;flex-shrink:0;font-family:'Space Mono',monospace}
+.mtrack{flex:1;height:8px;background:rgba(192,132,252,.08);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.mfill{height:100%;border-radius:10px;transition:width .85s cubic-bezier(.4,0,.2,1),background .4s}
+.mpct{font-size:10px;font-family:'Fredoka One',sans-serif;width:36px;text-align:right;flex-shrink:0;transition:color .4s}
+
+.btn-row{display:flex;flex-direction:column;gap:10px}
+.catbtn{width:100%;padding:18px 0;position:relative;overflow:hidden;
+  font-family:'Fredoka One',sans-serif;font-size:16px;
+  letter-spacing:4px;text-transform:uppercase;border:2px solid;
+  background:transparent;cursor:pointer;transition:all .22s;border-radius:14px}
+.catbtn::after{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.08),transparent);transition:left .4s}
+.catbtn:hover::after{left:100%}
+.catbtn:active{transform:scale(.97)}
+.catbtn .bsub{font-size:9px;letter-spacing:2px;display:block;margin-top:4px;
+  font-weight:400;opacity:.65;font-family:'Space Mono',monospace}
+
+.btn-on{color:var(--pink);border-color:var(--pink)}
+.btn-on:hover{box-shadow:0 0 30px rgba(255,110,180,.4),inset 0 0 20px rgba(255,110,180,.06)}
+.btn-on.active{background:rgba(255,110,180,.14);box-shadow:0 0 40px rgba(255,110,180,.5),inset 0 0 28px rgba(255,110,180,.1)}
+.btn-off{color:var(--mint);border-color:var(--mint)}
+.btn-off:hover{box-shadow:0 0 30px rgba(103,232,249,.35),inset 0 0 20px rgba(103,232,249,.06)}
+.btn-off.active{background:rgba(103,232,249,.1);box-shadow:0 0 40px rgba(103,232,249,.4),inset 0 0 28px rgba(103,232,249,.08)}
+
+.toggle-row{display:flex;align-items:center;justify-content:space-between;
+  padding:12px 16px;border:1px solid var(--border);background:rgba(192,132,252,.06);
+  cursor:pointer;transition:border-color .3s;border-radius:12px}
+.toggle-row:hover{border-color:var(--border-hot)}
+.tgl-label{font-size:11px;letter-spacing:2px;font-weight:700}
+.tgl-sw{width:56px;height:28px;border-radius:14px;border:1px solid var(--text-dim);
+  background:var(--bg);position:relative;transition:all .3s;cursor:pointer}
+.tgl-sw.on{border-color:var(--pink);background:rgba(255,110,180,.12);box-shadow:0 0 14px rgba(255,110,180,.35)}
+.tgl-knob{position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;
+  background:var(--text-dim);transition:all .3s;font-size:12px;display:flex;align-items:center;justify-content:center}
+.tgl-sw.on .tgl-knob{transform:translateX(28px);background:var(--pink);box-shadow:0 0 10px var(--pink)}
+
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.stat-card{background:rgba(192,132,252,.06);border:1px solid var(--border);padding:12px;
+  display:flex;flex-direction:column;gap:4px;border-radius:12px}
+.stat-k{font-size:9px;letter-spacing:2px;color:var(--text-dim);font-family:'Space Mono',monospace}
+.stat-v{font-family:'Fredoka One',sans-serif;font-size:22px;letter-spacing:2px;color:var(--purple)}
+
+.nodes-row{display:flex;justify-content:space-around;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.nnode{display:flex;align-items:center;gap:6px;font-size:10px;letter-spacing:2px;font-family:'Space Mono',monospace}
+.ndot{width:8px;height:8px;border-radius:50%;background:#221040;transition:all .4s}
+.ndot.live{background:var(--mint);box-shadow:0 0 8px var(--mint);animation:mintPulse 1.5s ease-in-out infinite}
+.ndot.err{background:var(--red);box-shadow:0 0 8px var(--red)}
+.ndot.amber{background:var(--yellow);box-shadow:0 0 8px var(--yellow)}
+.sweep-bar{height:3px;background:rgba(192,132,252,.08);border-radius:10px;overflow:hidden}
+.sweep-fill{height:100%;width:0;background:linear-gradient(to right,transparent,var(--purple),var(--pink),transparent);
+  animation:tickerScroll 3s ease-in-out infinite;border-radius:10px}
+
+.console{background:rgba(10,4,22,.95);border:1px solid var(--border);height:140px;overflow-y:auto;
+  padding:10px 12px;border-radius:10px}
+.console::-webkit-scrollbar{width:3px}
+.console::-webkit-scrollbar-thumb{background:var(--purple-dim);border-radius:4px}
+.logline{font-size:11px;line-height:2;color:var(--text-dim);font-family:'Space Mono',monospace}
+.logline .lt{color:var(--purple-dim);margin-right:6px}
+.logline.ok{color:var(--mint)}.logline.err{color:var(--pink)}.logline.warn{color:var(--yellow)}
+
+footer{width:100%;display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;
+  padding:12px 18px;border-top:1px solid var(--border);
+  font-size:9px;letter-spacing:2px;color:var(--text-dim);margin-top:6px;
+  position:relative;z-index:10;font-family:'Space Mono',monospace}
+
+@media(max-width:600px){
+  .catbtn{font-size:13px;padding:14px 0}
+  .col{min-width:100%}
+  h1{font-size:16px}
+}
+</style>
+</head>
+<body>
+
+<canvas id="bgCanvas"></canvas>
+
+<!-- BOOT -->
+<div id="boot">
+  <div class="boot-cat">🐱</div>
+  <div class="boot-title">NEKO<span> CTRL</span></div>
+  <div class="boot-sub">CAT LED CONTROLLER // SUPABASE // ESP32</div>
+  <div class="boot-bar-wrap"><div class="boot-bar-fill"></div></div>
+  <div class="boot-log" id="bootLog">Waking up the cats...</div>
+  <div class="boot-warn">🐾 Authorized pawsons only 🐾</div>
+</div>
+
+<!-- LED ON → FISHING STARTED MODAL -->
+<div class="modal-bg" id="mExpl">
+  <div class="mbox">
+    <div class="ripple-ring tl"></div>
+    <div class="ripple-ring tl"></div>
+    <div class="ripple-ring tl"></div>
+    <div class="m-icon-on">🎣</div>
+    <div class="m-title-on">FISHING STARTED!</div>
+    <div class="m-sub-on" id="mOnSub">BAIT CAST INTO SIGNAL POOL<br>REEL IN BEFORE THE TIMER RUNS OUT!</div>
+    <button class="mbtn teal" onclick="closeModal('expl')">[ let's fish! 🐾 ]</button>
+  </div>
+</div>
+
+<!-- LED OFF BEFORE TIMER → SUCCESS MODAL -->
+<div class="modal-bg" id="mDef">
+  <div class="mbox">
+    <div class="m-icon-off">🐟</div>
+    <div class="m-title-off" id="mOffTitle">FISH CAUGHT!</div>
+    <div class="m-sub-off" id="mOffSub">YOU REELED IT IN JUST IN TIME!<br>MISSION PURRFECT — GREAT CATCH 🎉</div>
+    <button class="mbtn yellow" onclick="closeModal('def')">[ purrfect ✨ ]</button>
+  </div>
+</div>
+
+<!-- TIMER EXPIRED → FAIL MODAL -->
+<div class="modal-bg" id="mFail">
+  <div class="mbox">
+    <div class="m-icon-fail">🐠</div>
+    <div class="m-title-fail">FISH ESCAPED! 😿</div>
+    <div class="m-sub-fail" id="mFailSub">YOU RAN OUT OF TIME!<br>THE FISH SWAM AWAY — LED AUTO-OFF 🌙</div>
+    <button class="mbtn red" onclick="closeModal('fail')">[ try again 🐾 ]</button>
+  </div>
+</div>
+
+<!-- PAGE -->
+<div style="max-width:960px;margin:0 auto;width:100%;position:relative;z-index:10">
+
+  <div class="topbar">
+    <div class="topbar-l">
+      <div class="badge">🐱 NEKO</div>
+      <div class="brand">Cat LED Controller // ESP32 + Supabase</div>
+    </div>
+    <div class="topbar-r">
+      <div class="paw-strip" id="pawStrip">
+        <span class="paw">🐾</span>
+        <span class="paw">🐾</span>
+        <span class="paw">🐾</span>
+        <span class="paw">🐾</span>
+      </div>
+      <div class="t-dot" id="topDot"></div>
+      <div class="clk" id="liveClock">00:00:00</div>
+    </div>
+  </div>
+
+  <!-- TICKER -->
+  <div class="alert-ticker" id="atick">
+    <div class="ticker-dot" id="tickDot"></div>
+    <div class="ticker-text" id="tickTxt">🐱 System standby — all quiet — no signals active — waiting for commands...</div>
+    <div class="ticker-lvl" id="tickLvl">MOOD: SLEEPY</div>
+  </div>
+
+  <header>
+    <div class="cmd-line">nekochan@esp32 ~ $ sudo led_ctrl --mode cat --connect supabase</div>
+    <h1>🐾 NEKO CTRL <span>// TERMINAL</span><em>// Supabase Real-Time // ESP32 LED Node // v1.0</em></h1>
+  </header>
+
+  <div class="main">
+
+    <!-- ROW 1: STATUS + TIMER -->
+    <div class="row">
+      <div class="panel" style="flex:2;min-width:280px">
+        <div class="ptag">Node Status</div>
+        <div class="status-wrap">
+          <div class="cat-face-wrap">
+            <span class="cat-sparkle">✨</span>
+            <span class="cat-sparkle">⭐</span>
+            <span class="cat-sparkle">✨</span>
+            <div class="cat-face off" id="catFace">😺</div>
+          </div>
+          <div class="s-text">
+            <div class="s-label">CURRENT STATE</div>
+            <div class="s-code" id="sCode">STANDBY</div>
+            <div class="s-detail" id="sDet">LED node is OFF<br>Waiting for signal... 😴</div>
+            <div class="s-badge">
+              <div class="sb-dot" id="sbDot"></div>
+              <span id="connTxt">CONNECTING...</span>
+            </div>
+          </div>
+        </div>
+        <div class="paw-leds">
+          <div class="paw-led-item"><span class="paw-led pk" id="lPwr">🐾</span>POWER</div>
+          <div class="paw-led-item"><span class="paw-led tl" id="lSig">🐾</span>SIGNAL</div>
+          <div class="paw-led-item"><span class="paw-led yw" id="lNet">🐾</span>NETWORK</div>
+          <div class="paw-led-item"><span class="paw-led pk" id="lArm">🐾</span>ACTIVE</div>
+          <div class="paw-led-item"><span class="paw-led gr" id="lDef">🐾</span>SAFE</div>
+        </div>
+      </div>
+
+      <div class="panel pmint" style="flex:1;min-width:180px">
+        <div class="ptag">Cat Timer</div>
+        <div class="cd-wrap">
+          <div class="cd-tag" id="cdTag">COUNTDOWN</div>
+          <div class="cd-val" id="cdVal">00:00</div>
+          <div class="cd-sub" id="cdSub">IDLE 😴</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CAT SCENE -->
+    <div class="panel" style="padding:10px 20px 12px">
+      <div class="ptag">Cat Operative</div>
+      <canvas id="catCanvas" width="900" height="130"></canvas>
+    </div>
+
+    <!-- ROW 2 -->
+    <div class="row">
+      <div class="col">
+        <div class="panel">
+          <div class="ptag">Mood Analysis</div>
+          <div class="mood-bars">
+            <div class="mrow"><div class="mlabel">SIGNAL</div><div class="mtrack"><div class="mfill" id="mb1" style="width:10%;background:var(--green-dim)"></div></div><div class="mpct" id="mp1" style="color:var(--text-dim)">10%</div></div>
+            <div class="mrow"><div class="mlabel">POWER</div><div class="mtrack"><div class="mfill" id="mb2" style="width:10%;background:var(--green-dim)"></div></div><div class="mpct" id="mp2" style="color:var(--text-dim)">10%</div></div>
+            <div class="mrow"><div class="mlabel">ENERGY</div><div class="mtrack"><div class="mfill" id="mb3" style="width:8%;background:var(--green-dim)"></div></div><div class="mpct" id="mp3" style="color:var(--text-dim)">8%</div></div>
+            <div class="mrow"><div class="mlabel">VIBE</div><div class="mtrack"><div class="mfill" id="mb4" style="width:5%;background:var(--green-dim)"></div></div><div class="mpct" id="mp4" style="color:var(--text-dim)">5%</div></div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="ptag">Session Stats</div>
+          <div class="stats-grid">
+            <div class="stat-card"><span class="stat-k">Polls</span><span class="stat-v" id="stPoll">000</span></div>
+            <div class="stat-card"><span class="stat-k">Commands</span><span class="stat-v" id="stCmd">000</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col">
+        <div class="panel ppink">
+          <div class="ptag">Control Panel</div>
+          <div class="btn-row">
+            <div class="toggle-row" onclick="handleToggle()">
+              <span class="tgl-label">LED POWER 🐱</span>
+              <div class="tgl-sw" id="tglSw"><div class="tgl-knob">🐾</div></div>
+            </div>
+            <button class="catbtn btn-on" id="btnOn" onclick="setLed(true)">
+              💡 TURN ON
+              <span class="bsub">activate led — start fishing</span>
+            </button>
+            <button class="catbtn btn-off" id="btnOff" onclick="setLed(false)">
+              🌙 TURN OFF
+              <span class="bsub">catch fish — end session</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- NETWORK + LOG -->
+    <div class="row">
+      <div class="panel" style="flex:1;min-width:200px">
+        <div class="ptag">Network</div>
+        <div class="nodes-row">
+          <div class="nnode"><div class="ndot" id="ndDB"></div>SUPABASE</div>
+          <div class="nnode"><div class="ndot live"></div>DASHBOARD</div>
+          <div class="nnode"><div class="ndot" id="ndSync"></div><span id="ndTxt">OFFLINE</span></div>
+        </div>
+        <div class="sweep-bar"><div class="sweep-fill"></div></div>
+      </div>
+      <div class="panel" style="flex:2;min-width:260px">
+        <div class="ptag">Activity Log</div>
+        <div class="console" id="con">
+          <div class="logline"><span class="lt">[BOOT]</span>Neko Ctrl starting up 🐱</div>
+          <div class="logline"><span class="lt">[INIT]</span>Connecting to Supabase...</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <footer>
+    <span>🐾 ESP32 // SUPABASE // NEKO CTRL v1.0</span>
+    <span id="fpoll">POLL: 3000ms</span>
+    <span id="fstat">STATUS: INIT</span>
+  </footer>
+</div>
+
+<script>
+/* ═══════════════════════
+   CONFIG
+═══════════════════════ */
+const SUPABASE_URL = "https://dcptcsrznhhcokvywwoe.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRjcHRjc3J6bmhoY29rdnl3d29lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NDUwMzIsImV4cCI6MjA5MTIyMTAzMn0.b7HDKYwkczdTn7_ZC229Jt-CaundUrWEx8gaCieVzjE";
+const TABLE   = "device_control";
+const ROW_ID  = 1;
+const POLL_MS = 3000;
+const BOMB_SECONDS = 30;
+
+/* ═══════════════════════
+   STATE
+═══════════════════════ */
+let curState = false, isUpdating = false, prevState = null;
+let pollCount = 0, cmdCount = 0;
+let countdownRemaining = BOMB_SECONDS;
+let countdownInterval = null, bombDetonated = false;
+
+function hdrs(){return{"apikey":SUPABASE_KEY,"Authorization":`Bearer ${SUPABASE_KEY}`,"Content-Type":"application/json","Prefer":"return=minimal"};}
+
+/* ═══════════════════════
+   CLOCK
+═══════════════════════ */
+setInterval(()=>{document.getElementById('liveClock').textContent=new Date().toLocaleTimeString('en-US',{hour12:false});},1000);
+setInterval(()=>{document.getElementById('stPoll').textContent=String(pollCount).padStart(3,'0');document.getElementById('stCmd').textContent=String(cmdCount).padStart(3,'0');},1000);
+
+/* ═══════════════════════
+   BOOT
+═══════════════════════ */
+const bootMsgs=['Waking up the cats...','Fetching fish from Supabase...','Warming up ESP32 node...','Calibrating purr sensors...','Charging paw batteries...','All cats ready! 🐱'];
+let bi=0;
+const bseq=setInterval(()=>{
+  document.getElementById('bootLog').textContent=bootMsgs[bi]||'Ready!';
+  bi++;
+  if(bi>=bootMsgs.length+1){
+    clearInterval(bseq);
+    setTimeout(()=>{document.getElementById('boot').classList.add('gone');log('Neko Ctrl boot complete 🐱','ok');log('Connecting to Supabase...','warn');init();},400);
+  }
+},360);
+
+/* ═══════════════════════
+   LOGGER
+═══════════════════════ */
+function ts(){return new Date().toLocaleTimeString('en-US',{hour12:false});}
+function log(msg,type=''){
+  const con=document.getElementById('con');
+  const el=document.createElement('div');
+  el.className='logline '+type;
+  el.innerHTML=`<span class="lt">[${ts()}]</span>${msg}`;
+  con.appendChild(el);con.scrollTop=con.scrollHeight;
+  while(con.children.length>45)con.removeChild(con.firstChild);
+}
+
+/* ═══════════════════════
+   COUNTDOWN
+═══════════════════════ */
+function startCountdown(){
+  if(countdownInterval)return;
+  bombDetonated=false;
+  countdownRemaining=BOMB_SECONDS;
+  document.getElementById('cdTag').textContent='COUNTDOWN';
+  countdownInterval=setInterval(()=>{
+    if(!curState){stopCountdown(false);return;}
+    countdownRemaining--;
+    updateCountdownDisplay();
+    if(countdownRemaining<=0){stopCountdown(true);triggerDetonation();}
+  },1000);
+  updateCountdownDisplay();
+}
+
+function stopCountdown(detonated){
+  if(countdownInterval){clearInterval(countdownInterval);countdownInterval=null;}
+  const cv=document.getElementById('cdVal');
+  countdownRemaining=BOMB_SECONDS;
+  if(!detonated){
+    cv.className='cd-val safe';
+    cv.textContent='00:00';
+    document.getElementById('cdSub').textContent='Caught! Great job 🎉';
+    document.getElementById('cdTag').textContent='SUCCESS';
+    setTimeout(()=>{if(!curState){cv.className='cd-val';cv.textContent='00:00';document.getElementById('cdSub').textContent='IDLE 😴';document.getElementById('cdTag').textContent='COUNTDOWN';catSetState('idle');}},3000);
+  }else{
+    cv.className='cd-val on';
+    cv.textContent='00:00';
+    document.getElementById('cdSub').textContent='🐟 Fish escaped!';
+    document.getElementById('cdTag').textContent='EXPIRED';
+    setTimeout(()=>{cv.className='cd-val';cv.textContent='00:00';document.getElementById('cdSub').textContent='IDLE 😴';document.getElementById('cdTag').textContent='COUNTDOWN';},5000);
+  }
+}
+
+function updateCountdownDisplay(){
+  const m=Math.floor(countdownRemaining/60),s=countdownRemaining%60;
+  const cv=document.getElementById('cdVal');
+  cv.textContent=String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+  if(countdownRemaining<=10){cv.className='cd-val on';document.getElementById('cdSub').textContent='😱 Reel it in!';}
+  else if(countdownRemaining<=20){cv.className='cd-val on';document.getElementById('cdSub').textContent='😨 Hurry!';}
+  else{cv.className='cd-val on';document.getElementById('cdSub').textContent='🎣 Fishing...';}
+}
+
+/* ═══════════════════════
+   TIMER EXPIRED — FISH ESCAPED
+   No flash, no shake — just fish escape animation + fail modal
+═══════════════════════ */
+function triggerDetonation(){
+  bombDetonated=true;
+  log('🐟 Timer ran out — fish escaped!','err');
+  // Trigger fish escape animation in the canvas scene
+  catSetState('scared');
+  fishEscaping=true;
+  fishEscapeVX=8; // fast escape speed
+  setTimeout(()=>{
+    document.getElementById('mFail').classList.add('show');
+  },600);
+  // Auto-turn off LED after a short delay
+  setTimeout(async()=>{
+    try{
+      await fetch(`${SUPABASE_URL}/rest/v1/${TABLE}?id=eq.${ROW_ID}`,{method:'PATCH',headers:hdrs(),body:JSON.stringify({led_status:false})});
+      curState=false;prevState=false;
+      document.getElementById('btnOn').classList.remove('active');
+      document.getElementById('btnOff').classList.add('active');
+      document.getElementById('tglSw').classList.remove('on');
+      document.getElementById('lPwr').classList.remove('lit');
+      document.getElementById('lSig').classList.remove('lit');
+      document.getElementById('lArm').classList.remove('lit');
+      document.getElementById('lDef').classList.add('lit');
+      log('ESP32 LED auto-off — fish got away','warn');
+    }catch(e){log(`Auto-off failed: ${e.message}`,'err');}
+    finally{bombDetonated=false;}
+  },1800);
+}
+
+/* ═══════════════════════
+   FETCH + SET
+═══════════════════════ */
+async function fetchStatus(){
+  document.getElementById('ndSync').className='ndot amber';
+  document.getElementById('ndTxt').textContent='POLLING...';
+  try{
+    const r=await fetch(`${SUPABASE_URL}/rest/v1/${TABLE}?id=eq.${ROW_ID}&select=led_status`,{headers:hdrs()});
+    if(!r.ok)throw new Error(`HTTP ${r.status}`);
+    const d=await r.json();
+    const ns=d[0]?.led_status??false;
+    pollCount++;
+    const changed=(prevState!==null&&ns!==prevState);
+    applyState(ns,changed);
+    prevState=ns;
+    document.getElementById('ndDB').className='ndot live';
+    document.getElementById('ndSync').className='ndot live';
+    document.getElementById('ndTxt').textContent=`SYNCED ${ts()}`;
+    document.getElementById('lNet').classList.add('lit');
+    document.getElementById('connTxt').textContent='CONNECTED ✓';
+    document.getElementById('sbDot').className='sb-dot live';
+    document.getElementById('fstat').textContent=`STATUS: ${ns?'ON':'OFF'}`;
+  }catch(e){
+    document.getElementById('ndDB').className='ndot err';
+    document.getElementById('ndSync').className='ndot err';
+    document.getElementById('ndTxt').textContent='ERROR';
+    document.getElementById('connTxt').textContent='CONN. ERROR';
+    log(`Fetch failed: ${e.message}`,'err');
+  }
+}
+
+async function setLed(val){
+  if(isUpdating)return;
+  isUpdating=true;
+  log(`CMD → LED ${val?'ON':'OFF'}  🐾`,'warn');
+  try{
+    const r=await fetch(`${SUPABASE_URL}/rest/v1/${TABLE}?id=eq.${ROW_ID}`,{method:'PATCH',headers:hdrs(),body:JSON.stringify({led_status:val})});
+    if(!r.ok)throw new Error(`HTTP ${r.status}`);
+    cmdCount++;
+    applyState(val,true);
+    prevState=val;
+    log(`ACK → LED ${val?'ON 🎣':'OFF 🐟'}`,val?'warn':'ok');
+  }catch(e){log(`Command failed: ${e.message}`,'err');}
+  finally{isUpdating=false;}
+}
+
+function handleToggle(){setLed(!curState);}
+
+/* ═══════════════════════
+   APPLY STATE
+═══════════════════════ */
+function applyState(val,withFx){
+  curState=val;
+  const skipFx=(!val&&bombDetonated);
+
+  document.getElementById('btnOn').classList.toggle('active',val);
+  document.getElementById('btnOff').classList.toggle('active',!val);
+  document.getElementById('tglSw').classList.toggle('on',val);
+
+  const face=document.getElementById('catFace');
+  face.textContent=val?'😾':'😺';
+  face.className='cat-face '+(val?'on':'off');
+
+  const sc=document.getElementById('sCode');
+  sc.textContent=val?'ACTIVE':'OFFLINE';
+  sc.className='s-code '+(val?'on':'off');
+
+  document.getElementById('sDet').innerHTML=val
+    ?'LED node is <b style="color:var(--pink)">ON</b><br>🎣 Fishing for signals!'
+    :'LED node is <b style="color:var(--mint)">OFF</b><br>😸 All clear, resting~';
+
+  const cv=document.getElementById('cdVal');
+  cv.className='cd-val '+(val?'on':'safe');
+
+  if(val&&!countdownInterval){startCountdown();catSetState('working');}
+  else if(!val&&countdownInterval){stopCountdown(false);}
+
+  document.getElementById('lPwr').classList.toggle('lit',val);
+  document.getElementById('lSig').classList.toggle('lit',val);
+  document.getElementById('lArm').classList.toggle('lit',val);
+  document.getElementById('lDef').classList.toggle('lit',!val);
+
+  if(val){
+    setMB('mb1','mp1',88,'var(--pink)');
+    setMB('mb2','mp2',92,'var(--pink)');
+    setMB('mb3','mp3',75,'var(--peach)');
+    setMB('mb4','mp4',82,'var(--purple)');
+  }else{
+    setMB('mb1','mp1',12,'var(--green-dim)');
+    setMB('mb2','mp2',15,'var(--green-dim)');
+    setMB('mb3','mp3',10,'var(--green-dim)');
+    setMB('mb4','mp4',8,'var(--green-dim)');
+  }
+
+  const at=document.getElementById('atick'),td=document.getElementById('tickDot');
+  const tt=document.getElementById('tickTxt'),tl=document.getElementById('tickLvl');
+  const dot=document.getElementById('topDot'),paws=document.querySelectorAll('.paw');
+  if(val){
+    at.classList.add('on');td.classList.add('active');tt.classList.add('active');tl.classList.add('active');
+    tt.textContent='🎣 FISHING ACTIVE — SIGNAL LIVE — CAST THE LINE — REEL IT IN BEFORE TIME IS UP — MEOW!';
+    tl.textContent='MOOD: FOCUSED';
+    dot.className='t-dot on';
+    paws.forEach(p=>p.classList.add('lit'));
+    document.getElementById('sbDot').classList.add('on');
+    document.getElementById('fstat').textContent='STATUS: ON';
+  }else{
+    at.classList.remove('on');td.classList.remove('active');tt.classList.remove('active');tl.classList.remove('active');
+    tt.textContent='🐱 System standby — LED off — all clear — signal terminated — resting mode 😴';
+    tl.textContent='MOOD: SLEEPY';
+    dot.className='t-dot';
+    paws.forEach(p=>p.classList.remove('lit'));
+    document.getElementById('sbDot').classList.remove('on');
+    document.getElementById('fstat').textContent='STATUS: OFF';
+  }
+
+  if(!skipFx&&withFx){if(val)triggerOn();else triggerOff();}
+}
+
+function setMB(bid,pid,v,c){
+  const b=document.getElementById(bid),p=document.getElementById(pid);
+  b.style.width=v+'%';b.style.background=c;p.textContent=v+'%';p.style.color=c;
+}
+
+/* ═══════════════════════
+   FX — NO SHAKE, NO FLASH
+   triggerOn  → cat casts bait, show "Fishing Started" modal
+   triggerOff → cat catches fish (happy), show "Fish Caught" modal
+═══════════════════════ */
+function triggerOn(){
+  // Cat enters working/fishing state — cast animation
+  catSetState('working');
+  // Spawn gentle water-drop floaties instead of explosion particles
+  launchParticles('on');
+  setTimeout(()=>document.getElementById('mExpl').classList.add('show'),400);
+}
+
+function triggerOff(){
+  // Cat catches the fish — happy jump state
+  catSetState('happy');
+  // Gentle success floaties
+  launchParticles('off');
+  document.getElementById('mOffTitle').textContent='FISH CAUGHT! 🐟';
+  document.getElementById('mOffSub').innerHTML='YOU REELED IT IN JUST IN TIME!<br>MISSION PURRFECT — GREAT CATCH 🎉';
+  setTimeout(()=>document.getElementById('mDef').classList.add('show'),300);
+}
+
+function closeModal(t){
+  if(t==='expl')document.getElementById('mExpl').classList.remove('show');
+  else if(t==='def')document.getElementById('mDef').classList.remove('show');
+  else if(t==='fail')document.getElementById('mFail').classList.remove('show');
+}
+document.getElementById('mExpl').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal('expl');});
+document.getElementById('mDef').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal('def');});
+document.getElementById('mFail').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal('fail');});
+
+/* ═══════════════════════
+   INIT
+═══════════════════════ */
+async function init(){
+  setInterval(()=>{if(!curState)spawnStars(8);},3000);
+  await fetchStatus();
+  log('Connected! Polling every 3s 🐾','ok');
+  setInterval(fetchStatus,POLL_MS);
+}
+
+/* ═══════════════════════════════════════
+   BACKGROUND STAR CANVAS
+═══════════════════════════════════════ */
+const bgC=document.getElementById('bgCanvas');
+const bgX=bgC.getContext('2d');
+let bgW,bgH;
+function resizeBg(){bgW=bgC.width=window.innerWidth;bgH=bgC.height=window.innerHeight;}
+resizeBg();window.addEventListener('resize',resizeBg);
+
+const stars=[];
+function spawnStars(n=5){
+  for(let i=0;i<n;i++){
+    stars.push({
+      x:Math.random()*bgW,y:Math.random()*bgH,
+      r:Math.random()*2+0.5,
+      alpha:Math.random()*0.6+0.2,
+      pulse:Math.random()*Math.PI*2,
+      speed:0.01+Math.random()*0.02,
+      color:`hsl(${260+Math.random()*80},80%,${70+Math.random()*20}%)`,
+    });
+  }
+}
+for(let i=0;i<120;i++)spawnStars(1);
+
+const floaties=[];
+function spawnFloatie(x,y,type){
+  floaties.push({x,y,vy:-1.5-Math.random()*2,vx:(Math.random()-.5)*1.2,
+    life:0,maxLife:80+Math.random()*40,
+    // fishing-themed floaties: water drops and fish on cast, bubbles and stars on catch
+    char:type==='on'?['💧','🎣','〰️','💙','🌊'][Math.floor(Math.random()*5)]:['🐟','✨','🌟','💛','🎉'][Math.floor(Math.random()*5)]});
+}
+
+let bgFrame=0;
+function drawBg(){
+  bgX.clearRect(0,0,bgW,bgH);bgFrame++;
+  stars.forEach(s=>{
+    s.pulse+=s.speed;
+    const a=((Math.sin(s.pulse)+1)*.5)*s.alpha;
+    bgX.beginPath();bgX.arc(s.x,s.y,s.r,0,Math.PI*2);
+    bgX.fillStyle=s.color.replace(')',`,${a})`).replace('hsl','hsla');
+    bgX.fill();
+  });
+  for(let i=floaties.length-1;i>=0;i--){
+    const f=floaties[i];f.x+=f.vx;f.y+=f.vy;f.life++;
+    const a=1-f.life/f.maxLife;
+    bgX.save();bgX.globalAlpha=a*0.7;
+    bgX.font='16px serif';bgX.textAlign='center';
+    bgX.fillText(f.char,f.x,f.y);bgX.restore();
+    if(f.life>=f.maxLife)floaties.splice(i,1);
+  }
+  requestAnimationFrame(drawBg);
+}
+requestAnimationFrame(drawBg);
+
+function launchParticles(type){
+  const cx=window.innerWidth/2,cy=window.innerHeight/2;
+  for(let i=0;i<20;i++)spawnFloatie(cx+(Math.random()-.5)*300,cy+(Math.random()-.5)*200,type);
+}
+
+/* ═══════════════════════════════════════
+   CAT CANVAS ANIMATION
+═══════════════════════════════════════ */
+const catC=document.getElementById('catCanvas');
+const catX=catC.getContext('2d');
+let catW,catH;
+function resizeCat(){
+  catC.width=catC.offsetWidth*window.devicePixelRatio||catC.offsetWidth;
+  catC.height=130;
+  catW=catC.width;catH=catC.height;
+}
+resizeCat();window.addEventListener('resize',resizeCat);
+
+let catState='idle';
+let catAnimF=0;
+let catJumps=0;
+let catJumpVY=0;
+let catJumpY=0;
+let catBombX=0;
+const CAT_GND=90;
+
+function catSetState(st){
+  catState=st;catAnimF=0;
+  if(st==='happy'){catJumps=0;catJumpVY=-13;catJumpY=0;}
+  if(st==='scared'){catJumpVY=-10;catJumpY=0;}
+  if(st==='idle'){catJumpY=0;catJumpVY=0;}
+}
+
+// Fish state
+let fishX=0,fishY=0,fishBobDir=1,fishCaught=false,fishFlipTimer=0;
+let fishEscapeX=0,fishEscapeVX=0,fishEscaping=false;
+
+function drawCatScene(){
+  const W=catC.width,H=catC.height;
+  catX.clearRect(0,0,W,H);
+  catAnimF++;
+  catBombX=W*0.6;
+
+  const pondX=catBombX;
+  const pondY=CAT_GND+8;
+
+  // Jump physics
+  if(catState==='happy'){
+    catJumpY+=catJumpVY;catJumpVY+=0.85;
+    if(catJumpY>=0){catJumpY=0;catJumps++;
+      if(catJumps<4)setTimeout(()=>{catJumpVY=-10-Math.max(0,3-catJumps)*2;},60);
+      else catState='idle';}
+  }
+  if(catState==='scared'){
+    catJumpY+=catJumpVY;catJumpVY+=0.5;
+    if(catJumpY>=0){catJumpY=0;catJumpVY=0;}}
+
+  // Fish bobbing / escape logic
+  if(catState==='working'){
+    fishBobDir=Math.sin(catAnimF*0.07)*5;
+    fishFlipTimer++;
+    if(fishFlipTimer%120===60){fishEscaping=true;fishEscapeVX=3;}
+    if(fishEscaping){
+      fishEscapeX+=fishEscapeVX;fishEscapeVX*=0.88;
+      if(Math.abs(fishEscapeX)>18){fishEscapeVX*=-1;}
+      if(Math.abs(fishEscapeVX)<0.3){fishEscaping=false;fishEscapeX=0;}
+    }
+    fishX=pondX+fishEscapeX;
+    fishY=pondY-8+fishBobDir;
+  }
+
+  // Ground line
+  catX.save();
+  catX.strokeStyle='rgba(192,132,252,0.15)';catX.lineWidth=1;catX.setLineDash([5,8]);
+  catX.beginPath();catX.moveTo(0,CAT_GND+1);catX.lineTo(W,CAT_GND+1);catX.stroke();
+  catX.setLineDash([]);catX.restore();
+
+  if(catState==='working'){
+    drawFishPond(pondX,pondY);
+    drawFishInPond(fishX,fishY);
+    // Fishing line from cat paw to water
+    const catCX=W*0.25;
+    const pawTipX=catCX+22;
+    const pawTipY=CAT_GND-18;
+    const lineSwing=Math.sin(catAnimF*0.18)*4;
+    catX.save();
+    catX.strokeStyle='rgba(255,220,100,0.7)';catX.lineWidth=1.2;
+    catX.beginPath();
+    catX.moveTo(pawTipX,pawTipY);
+    catX.quadraticCurveTo((pawTipX+fishX)/2+lineSwing,pawTipY-14,fishX,fishY-4);
+    catX.stroke();
+    catX.beginPath();catX.arc(fishX,fishY-4,2.5,0,Math.PI*2);
+    catX.fillStyle='rgba(255,220,100,0.9)';catX.fill();
+    catX.restore();
+  } else if(catState==='scared'){
+    // Fish escaping fast — draw it fleeing off to the right
+    drawFishPond(pondX,pondY);
+    const escapedX=pondX+60+catAnimF*1.5;
+    const escapedY=pondY-10+Math.sin(catAnimF*0.3)*6;
+    if(escapedX<W+30){drawFishInPond(escapedX,escapedY);}
+    // Broken line (fish snapped it)
+    catX.save();
+    catX.strokeStyle='rgba(255,220,100,0.3)';catX.lineWidth=1;catX.setLineDash([3,5]);
+    catX.beginPath();catX.moveTo(W*0.25+22,CAT_GND-18);catX.lineTo(pondX,pondY-8);catX.stroke();
+    catX.setLineDash([]);catX.restore();
+  } else {
+    drawNekoDevice(catBombX,CAT_GND-14);
+  }
+
+  // Draw cat
+  const cx=W*0.25;
+  const cy=CAT_GND+catJumpY;
+  drawCat(cx,cy,catState,catAnimF);
+
+  // Label
+  catX.save();
+  catX.font=`11px "Nunito"`;catX.textAlign='center';catX.fillStyle='rgba(192,132,252,0.7)';
+  const lbl=catState==='idle'?'😺 Waiting...'
+    :catState==='working'?'😼 Fishing for signals...'
+    :catState==='happy'?'😸 Got the fish! 🎉'
+    :'😱 The fish escaped!';
+  catX.fillText(lbl,cx,CAT_GND+20);catX.restore();
+
+  requestAnimationFrame(drawCatScene);
+}
+requestAnimationFrame(drawCatScene);
+
+/* ── FISH POND ── */
+function drawFishPond(px,py){
+  catX.save();
+  catX.beginPath();catX.ellipse(px,py+4,38,16,0,0,Math.PI*2);
+  catX.fillStyle='rgba(30,100,180,0.35)';catX.fill();
+  catX.strokeStyle='rgba(103,232,249,0.5)';catX.lineWidth=1.5;catX.stroke();
+  const ripAmp=Math.sin(catAnimF*0.09)*3;
+  catX.beginPath();catX.ellipse(px+ripAmp,py+4,22,9,0,0,Math.PI*2);
+  catX.strokeStyle='rgba(103,232,249,0.2)';catX.lineWidth=1;catX.stroke();
+  catX.font='7px Space Mono';catX.textAlign='center';
+  catX.fillStyle='rgba(103,232,249,0.45)';
+  catX.fillText('SIGNAL POOL',px,py+18);
+  catX.restore();
+}
+
+/* ── FISH IN POND ── */
+function drawFishInPond(fx,fy){
+  catX.save();
+  const flipAngle=fishEscaping?Math.sin(catAnimF*0.6)*0.3:Math.sin(catAnimF*0.08)*0.1;
+  catX.translate(fx,fy);catX.rotate(flipAngle);
+  catX.beginPath();catX.ellipse(0,0,10,5,0,0,Math.PI*2);
+  catX.fillStyle='rgba(255,180,50,0.9)';catX.fill();
+  catX.strokeStyle='rgba(255,220,100,0.8)';catX.lineWidth=1;catX.stroke();
+  catX.beginPath();catX.moveTo(-9,0);catX.lineTo(-15,-5);catX.lineTo(-15,5);catX.closePath();
+  catX.fillStyle='rgba(255,140,30,0.8)';catX.fill();
+  catX.beginPath();catX.arc(5,-1,1.5,0,Math.PI*2);
+  catX.fillStyle='rgba(0,0,0,0.8)';catX.fill();
+  catX.beginPath();catX.arc(5.4,-1.4,0.5,0,Math.PI*2);
+  catX.fillStyle='rgba(255,255,255,0.9)';catX.fill();
+  catX.strokeStyle='rgba(255,200,80,0.4)';catX.lineWidth=0.7;
+  catX.beginPath();catX.arc(2,0,5,0.5,2.6);catX.stroke();
+  catX.beginPath();catX.arc(-2,0,5,0.5,2.6);catX.stroke();
+  if(catAnimF%20<10){
+    catX.beginPath();catX.arc(8+Math.sin(catAnimF*0.3)*2,-6,1.5,0,Math.PI*2);
+    catX.strokeStyle='rgba(103,232,249,0.5)';catX.lineWidth=0.8;catX.stroke();
+    catX.beginPath();catX.arc(6,-9,1,0,Math.PI*2);catX.stroke();
+  }
+  catX.restore();
+}
+
+function drawCat(cx,cy,state,f){
+  catX.save();catX.translate(cx,cy);
+
+  const col=state==='scared'?'rgba(255,200,100,0.9)':state==='working'?'rgba(255,200,80,0.95)':state==='happy'?'rgba(103,232,249,0.8)':'rgba(192,132,252,0.85)';
+  const bodyCol=state==='scared'?'rgba(255,150,50,0.7)':state==='working'?'rgba(180,130,30,0.75)':'rgba(130,80,200,0.7)';
+  const bob=state==='idle'?Math.sin(f*0.08)*2:state==='working'?Math.sin(f*0.12)*2:0;
+
+  // TAIL
+  catX.save();catX.strokeStyle=col;catX.lineWidth=4;
+  const tailSwing=state==='happy'?Math.sin(f*0.3)*28:state==='working'?Math.sin(f*0.28)*22:Math.sin(f*0.06)*10;
+  catX.beginPath();catX.moveTo(8,-10);
+  catX.bezierCurveTo(30+tailSwing,-5,35+tailSwing,-25,25+tailSwing/2,-38);
+  catX.stroke();catX.restore();
+
+  // BODY
+  catX.beginPath();catX.ellipse(0,-18+bob,14,16,0,0,Math.PI*2);
+  catX.fillStyle=bodyCol;catX.fill();catX.strokeStyle=col;catX.lineWidth=1.5;catX.stroke();
+
+  // HEAD
+  catX.beginPath();catX.ellipse(0,-40+bob,11,10,0,0,Math.PI*2);
+  catX.fillStyle=bodyCol;catX.fill();catX.strokeStyle=col;catX.lineWidth=1.5;catX.stroke();
+
+  // EARS
+  const earWig=state==='working'?Math.sin(f*0.22)*6:0;
+  catX.beginPath();catX.moveTo(-8,-48+bob+earWig);catX.lineTo(-14,-58+bob);catX.lineTo(-2,-50+bob);catX.closePath();
+  catX.fillStyle=col;catX.fill();
+  catX.beginPath();catX.moveTo(-8,-48+bob+earWig);catX.lineTo(-12,-55+bob);catX.lineTo(-4,-50+bob);catX.closePath();
+  catX.fillStyle='rgba(255,182,193,0.6)';catX.fill();
+  catX.beginPath();catX.moveTo(8,-48+bob-earWig);catX.lineTo(14,-58+bob);catX.lineTo(2,-50+bob);catX.closePath();
+  catX.fillStyle=col;catX.fill();
+  catX.beginPath();catX.moveTo(8,-48+bob-earWig);catX.lineTo(12,-55+bob);catX.lineTo(4,-50+bob);catX.closePath();
+  catX.fillStyle='rgba(255,182,193,0.6)';catX.fill();
+
+  // FACE
+  catX.fillStyle=col;
+  if(state==='happy'){
+    catX.lineWidth=2;catX.strokeStyle=col;
+    catX.beginPath();catX.arc(-3.5,-41+bob,3,Math.PI,0);catX.stroke();
+    catX.beginPath();catX.arc(3.5,-41+bob,3,Math.PI,0);catX.stroke();
+    catX.beginPath();catX.arc(0,-38+bob,3,0,Math.PI);catX.stroke();
+  }else if(state==='scared'){
+    catX.beginPath();catX.arc(-3.5,-41+bob,3.5,0,Math.PI*2);catX.fill();
+    catX.fillStyle='rgba(0,0,0,0.6)';catX.beginPath();catX.arc(-3.5,-41+bob,2,0,Math.PI*2);catX.fill();
+    catX.fillStyle=col;catX.beginPath();catX.arc(3.5,-41+bob,3.5,0,Math.PI*2);catX.fill();
+    catX.fillStyle='rgba(0,0,0,0.6)';catX.beginPath();catX.arc(3.5,-41+bob,2,0,Math.PI*2);catX.fill();
+  }else if(state==='working'){
+    catX.lineWidth=2;catX.strokeStyle=col;
+    catX.beginPath();catX.moveTo(-6,-41+bob);catX.lineTo(-1,-39+bob);catX.stroke();
+    catX.beginPath();catX.moveTo(-6,-39+bob);catX.lineTo(-1,-41+bob);catX.stroke();
+    catX.beginPath();catX.moveTo(1,-41+bob);catX.lineTo(6,-39+bob);catX.stroke();
+    catX.beginPath();catX.moveTo(1,-39+bob);catX.lineTo(6,-41+bob);catX.stroke();
+  }else{
+    catX.beginPath();catX.arc(-3.5,-41+bob,2.5,0,Math.PI*2);catX.fill();
+    catX.beginPath();catX.arc(3.5,-41+bob,2.5,0,Math.PI*2);catX.fill();
+  }
+
+  // Whiskers
+  catX.save();catX.strokeStyle='rgba(255,255,255,0.5)';catX.lineWidth=0.8;
+  catX.beginPath();catX.moveTo(-2,-38+bob);catX.lineTo(-14,-36+bob);catX.stroke();
+  catX.beginPath();catX.moveTo(-2,-37+bob);catX.lineTo(-14,-38+bob);catX.stroke();
+  catX.beginPath();catX.moveTo(2,-38+bob);catX.lineTo(14,-36+bob);catX.stroke();
+  catX.beginPath();catX.moveTo(2,-37+bob);catX.lineTo(14,-38+bob);catX.stroke();
+  catX.restore();
+
+  // ARMS / PAWS
+  if(state==='working'){
+    catX.strokeStyle=col;catX.lineWidth=3;
+    catX.save();catX.translate(-10,-10+bob);catX.rotate(0.3);
+    catX.beginPath();catX.moveTo(0,0);catX.lineTo(-6,10);catX.stroke();
+    catX.restore();
+    const rodSwing=-0.5+Math.sin(f*0.18)*0.2;
+    catX.save();catX.translate(10,-12+bob);catX.rotate(rodSwing);
+    catX.beginPath();catX.moveTo(0,0);catX.lineTo(16,-4);catX.stroke();
+    catX.strokeStyle='rgba(255,220,100,0.8)';catX.lineWidth=1;
+    catX.beginPath();catX.moveTo(16,-4);catX.lineTo(22,-2);catX.stroke();
+    catX.restore();
+  } else {
+    const pawSwing=state==='happy'?-1.8+Math.sin(f*0.35)*0.6:Math.sin(f*0.08)*0.15;
+    catX.strokeStyle=col;catX.lineWidth=3;
+    catX.save();catX.translate(-10,-10+bob);catX.rotate(pawSwing);
+    catX.beginPath();catX.moveTo(0,0);catX.lineTo(-8,8);catX.stroke();
+    catX.restore();
+    catX.save();catX.translate(10,-10+bob);catX.rotate(-pawSwing);
+    catX.beginPath();catX.moveTo(0,0);catX.lineTo(8,8);catX.stroke();
+    catX.restore();
+  }
+
+  // LEGS
+  const legSwing=state==='happy'?Math.sin(f*0.4)*8:Math.sin(f*0.1)*4;
+  catX.strokeStyle=col;catX.lineWidth=3;
+  catX.beginPath();catX.moveTo(-6,-4+bob);catX.lineTo(-8+legSwing,6);catX.stroke();
+  catX.beginPath();catX.moveTo(6,-4+bob);catX.lineTo(8-legSwing,6);catX.stroke();
+
+  // Happy stars
+  if(state==='happy'&&f%15<8){
+    catX.font='12px serif';catX.globalAlpha=0.8;catX.fillText('🐟',12+Math.random()*8,-50+bob);
+  }
+
+  catX.restore();
+}
+
+function drawNekoDevice(bx,by){
+  const on=curState;
+  const glowColor=on?'rgba(255,110,180,':'rgba(103,232,249,';
+  const lineColor=on?'#ff6eb4':'#67e8f9';
+
+  catX.save();
+  catX.beginPath();catX.arc(bx,by,26,0,Math.PI*2);
+  const grd=catX.createRadialGradient(bx,by,4,bx,by,28);
+  grd.addColorStop(0,glowColor+(on?0.35+Math.sin(catAnimF*0.12)*0.2:0.15)+')');
+  grd.addColorStop(1,'transparent');catX.fillStyle=grd;catX.fill();
+
+  catX.beginPath();nekoRect(catX,bx-20,by-18,40,36,8);
+  catX.fillStyle=on?'rgba(28,6,20,0.95)':'rgba(6,18,24,0.92)';
+  catX.fill();catX.strokeStyle=lineColor;catX.lineWidth=1.8;catX.stroke();
+
+  catX.beginPath();catX.moveTo(bx-10,by-18);catX.lineTo(bx-14,by-26);catX.lineTo(bx-4,by-18);catX.closePath();
+  catX.fillStyle=lineColor;catX.fill();
+  catX.beginPath();catX.moveTo(bx+10,by-18);catX.lineTo(bx+14,by-26);catX.lineTo(bx+4,by-18);catX.closePath();
+  catX.fillStyle=lineColor;catX.fill();
+
+  catX.beginPath();nekoRect(catX,bx-13,by-12,26,14,4);
+  catX.fillStyle=on?`rgba(255,110,180,${0.3+Math.sin(catAnimF*0.1)*0.15})`:'rgba(103,232,249,0.12)';
+  catX.fill();catX.strokeStyle=lineColor;catX.lineWidth=0.8;catX.stroke();
+
+  catX.font='bold 8px Fredoka One';catX.textAlign='center';
+  catX.fillStyle=on?'#ffb3d9':'#67e8f9';
+  const m=Math.floor(countdownRemaining/60),s=countdownRemaining%60;
+  catX.fillText(on?String(m).padStart(2,'0')+':'+String(s).padStart(2,'0'):'-- : --',bx,by-2);
+
+  catX.font='12px serif';catX.fillText(on?'😾':'😸',bx,by+12);
+  catX.font='7px Space Mono';catX.fillStyle=lineColor;
+  catX.fillText(on?'◉ ACTIVE':'◎ STANDBY',bx,by+24);
+  catX.restore();
+}
+
+function nekoRect(ctx,x,y,w,h,r){
+  ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);
+  ctx.quadraticCurveTo(x+w,y,x+w,y+r);ctx.lineTo(x+w,y+h-r);
+  ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);ctx.lineTo(x+r,y+h);
+  ctx.quadraticCurveTo(x,y+h,x,y+h-r);ctx.lineTo(x,y+r);
+  ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();
+}
+</script>
+</body>
+</html>
